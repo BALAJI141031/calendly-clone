@@ -6,7 +6,7 @@ export type ScheduleDocument = HydratedDocument<Schedule>;
 @Schema()
 export class Schedule {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
-  user: string;
+  userId: string;
   @Prop({ required: true })
   day: string;
   @Prop({ required: true })
