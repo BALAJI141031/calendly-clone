@@ -27,4 +27,10 @@ export class UserDao {
     }
     return user;
   }
+
+  async updateUser(userId: any, updateUserDto: any): Promise<User> {
+    return this.userModel
+      .findOneAndUpdate({ _id: userId }, updateUserDto, { new: true })
+      .exec();
+  }
 }

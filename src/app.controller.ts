@@ -1,6 +1,11 @@
 import { Controller, Post, Body, Param, Get } from '@nestjs/common';
 import { AppService } from './app.service';
+import { ApiProperty } from '@nestjs/swagger';
 export class CreateUserDto {
+  @ApiProperty({
+    description: 'name of the user',
+    example: 'virat Kohli',
+  })
   readonly name: string;
   readonly email: string;
   readonly events?: string[];
@@ -23,5 +28,10 @@ export class AppController {
   @Post('schedule')
   async createSchedule(@Body() createSchduleDto: any): Promise<any> {
     return this.appService.createSchedule(createSchduleDto);
+  }
+
+  @Get('user/schedules/:userId')
+  async getUserSchedules(@Param('userId') userId: string): Promise<any> {
+    return this.appService.getUserSchedules(userId);
   }
 }
