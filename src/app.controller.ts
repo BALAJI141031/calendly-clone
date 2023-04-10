@@ -11,6 +11,19 @@ export class CreateUserDto {
   readonly events?: string[];
   readonly schedules?: string[];
 }
+export class CreateEventDto {
+  @ApiProperty({
+    description: 'name of the user',
+    example: 'virat Kohli',
+  })
+  readonly guestEmail: string;
+  readonly organiserId: string;
+  readonly scheduleId: string;
+  readonly title: string;
+  readonly day: string;
+  readonly startTime: Date;
+  readonly endTime: Date;
+}
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
@@ -33,5 +46,16 @@ export class AppController {
   @Get('user/schedules/:userId')
   async getUserSchedules(@Param('userId') userId: string): Promise<any> {
     return this.appService.getUserSchedules(userId);
+  }
+
+  @Post('event')
+  async createEvent(@Body() createEventDto: CreateEventDto): Promise<any> {
+    console.log('event called');
+    return this.appService.createEvent(createEventDto);
+  }
+  @Post('eventCreds')
+  async getCreds(): Promise<any> {
+    console.log('event called');
+    // return this.appService.createEvent(createEventDto);
   }
 }

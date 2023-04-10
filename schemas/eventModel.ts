@@ -6,7 +6,7 @@ export type EventDocument = HydratedDocument<Event>;
 @Schema()
 export class Event {
   @Prop({ required: true })
-  organiser: string;
+  guestEmail: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
   organiserId: string;
@@ -17,7 +17,7 @@ export class Event {
   @Prop({ required: true })
   title: string;
   @Prop({ required: true })
-  day: Date;
+  day: string;
 
   @Prop({ required: true })
   startTime: Date;

@@ -13,8 +13,8 @@ export class Schedule {
   start: Date;
   @Prop({ required: true })
   end: Date;
-  @Prop({ required: true })
-  duration: number;
+  // @Prop({ required: true })
+  // duration: number;
   createdAt: Date;
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Event' })
   events: string[];
