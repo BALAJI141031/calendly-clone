@@ -13,6 +13,7 @@ import { EventsDao } from 'dao/events.dao';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
+import { CreateEventDto, ScheduleDto } from 'dao/dto';
 
 @Injectable()
 export class AppService {
@@ -33,16 +34,9 @@ export class AppService {
   @Inject()
   private scheduleDao: ScheduleDao;
 
-  async createActalEvent(createEventDto) {
-    const {
-      scheduleId,
-      organiserId,
-      summary,
-      description,
-      endTime,
-      startTime,
-      guestEmail,
-    } = createEventDto;
+  async createActalEvent(createEventDto: any) {
+    const { scheduleId, organiserId, endTime, startTime, guestEmail } =
+      createEventDto;
     // try {
     //   const { tokens } = await oauth2Client.getToken(code);
     //   console.log(tokens, '----------------------------->');
@@ -63,8 +57,8 @@ export class AppService {
     }
 
     const event = {
-      summary,
-      description,
+      summary: '',
+      description: '',
       start: {
         dateTime: startTime,
         timeZone: 'America/Los_Angeles',
@@ -109,7 +103,7 @@ export class AppService {
     return await this.userDao.getUserById(userId);
   }
 
-  async createSchedule(createScheduleDto: any): Promise<any> {
+  async createSchedule(createScheduleDto: ScheduleDto): Promise<any> {
     const { userId, day } = createScheduleDto;
     const user = await this.userDao.getUserById(userId);
     const schedule = await this.scheduleDao.getSchedule({ userId, day });
