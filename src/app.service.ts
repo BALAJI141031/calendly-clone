@@ -3,6 +3,7 @@ import {
   Injectable,
   ForbiddenException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import axios from 'axios';
 import { CreateUserDto, UserDao } from '../dao/user.dao';
@@ -13,7 +14,7 @@ import { EventsDao } from 'dao/events.dao';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
-import { CreateEventDto, ScheduleDto } from 'dao/dto';
+import { ScheduleDto } from 'dao/dto';
 
 @Injectable()
 export class AppService {
@@ -35,7 +36,7 @@ export class AppService {
   private scheduleDao: ScheduleDao;
 
   async createActalEvent(createEventDto: any) {
-    const { scheduleId, organiserId, endTime, startTime, guestEmail } =
+    const { scheduleId, organiserId, endTime, startTime, guestEmail, day } =
       createEventDto;
     // try {
     //   const { tokens } = await oauth2Client.getToken(code);
@@ -50,10 +51,40 @@ export class AppService {
       version: 'v3',
       auth: this.oauth2Client,
     });
-    const user = await this.userDao.getUserById(organiserId);
+    let user;
+    try {
+      user = await this.userDao.getUserById(organiserId);
+    } catch (e) {
+      throw new NotFoundException(`Organiser with ID ${organiserId} not found`);
+    }
     const schedule = await this.scheduleDao.getSchedule({ _id: scheduleId });
     if (!schedule) {
-      throw new NotFoundException(`schedule with ID ${scheduleId} not found`);
+      throw new NotFoundException(
+        `Organiser is not available during this slot`,
+      );
+    }
+    if (startTime < schedule.start || endTime > schedule.end) {
+      throw new BadRequestException(
+        'Your event is not falling in ordaniser schedule',
+      );
+    }
+    const query = {
+      organiserId,
+      day: { $eq: day },
+      startTime: { $gt: startTime },
+      endTime: { $lt: endTime },
+    };
+    const organiserEventsClash = await this.eventsDao.findEvent(query);
+    if (organiserEventsClash) {
+      throw new BadRequestException(
+        'Sorry this Slot is Booked by some other user',
+      );
+    }
+    delete query.organiserId;
+    query['guestEmail'] = guestEmail;
+    const isGuestSlotBooked = await this.eventsDao.findEvent(query);
+    if (isGuestSlotBooked) {
+      throw new BadRequestException('You have already meeting in this slot');
     }
 
     const event = {
@@ -82,7 +113,12 @@ export class AppService {
           return;
         }
         console.log(`Event created: ${res.data.htmlLink}`);
-        return await this.eventsDao.create(createEventDto);
+        const eventResponse = await this.eventsDao.create(createEventDto);
+        const updatedEvents = [...(user?.events || []), eventResponse._id];
+        await this.userDao.updateUser(user._id, {
+          scheduleId: updatedEvents,
+        });
+        return eventResponse;
       },
     );
   }

@@ -8,7 +8,7 @@ export class Schedule {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
   userId: string;
   @Prop({ required: true })
-  day: string;
+  day: Date;
   @Prop({ required: true })
   start: Date;
   @Prop({ required: true })

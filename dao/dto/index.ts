@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsEmail } from 'class-validator';
 import { Types } from 'mongoose';
 export class CreateUserDto {
   @ApiProperty({
@@ -34,7 +34,7 @@ export class CreateEventDto {
     example: 'example@gmail.com',
   })
   @IsNotEmpty()
-  @IsString()
+  @IsEmail()
   readonly guestEmail: string;
 
   @ApiProperty({
