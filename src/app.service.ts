@@ -46,8 +46,15 @@ export class AppService {
   }
   async createActalEvent(createEventDto: any) {
     try {
-      const { scheduleId, organiserId, endTime, startTime, guestEmail, day } =
-        createEventDto;
+      const {
+        scheduleId,
+        organiserId,
+        endTime,
+        startTime,
+        guestEmail,
+        day,
+        title,
+      } = createEventDto;
 
       this.oauth2Client.setCredentials({
         access_token: this.configService.get<string>('access_token'),
@@ -65,7 +72,7 @@ export class AppService {
         );
       }
       const schedule = await this.scheduleDao.getSchedule({ _id: scheduleId });
-      if (schedule) {
+      if (!schedule) {
         throw new NotFoundException(
           `Organiser is not available during this slot`,
         );
@@ -87,7 +94,6 @@ export class AppService {
           'Sorry this Slot is Booked by some other user',
         );
       }
-      console.log(organiserEventsClash, '-------------> organiser vent cls');
       delete query.organiserId;
       query['guestEmail'] = guestEmail;
       const isGuestSlotBooked = await this.eventsDao.findEvent(query);
@@ -96,7 +102,7 @@ export class AppService {
       }
 
       const event = {
-        summary: '',
+        summary: title,
         description: '',
         start: {
           dateTime: startTime,
