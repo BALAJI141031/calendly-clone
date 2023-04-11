@@ -65,12 +65,12 @@ export class AppService {
         );
       }
       const schedule = await this.scheduleDao.getSchedule({ _id: scheduleId });
-      if (!schedule) {
+      if (schedule) {
         throw new NotFoundException(
           `Organiser is not available during this slot`,
         );
       }
-      if (startTime < schedule.start || endTime > schedule.end) {
+      if (startTime < schedule?.start || endTime > schedule?.end) {
         throw new BadRequestException(
           'Your event is not falling in organiser schedule',
         );
@@ -78,8 +78,8 @@ export class AppService {
       const query = {
         organiserId,
         day: { $eq: day },
-        startTime: { $gt: startTime },
-        endTime: { $lt: endTime },
+        startTime: { $gte: startTime },
+        endTime: { $lte: endTime },
       };
       const organiserEventsClash = await this.eventsDao.findEvent(query);
       if (organiserEventsClash) {
@@ -87,6 +87,7 @@ export class AppService {
           'Sorry this Slot is Booked by some other user',
         );
       }
+      console.log(organiserEventsClash, '-------------> organiser vent cls');
       delete query.organiserId;
       query['guestEmail'] = guestEmail;
       const isGuestSlotBooked = await this.eventsDao.findEvent(query);
