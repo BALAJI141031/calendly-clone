@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Param, Get, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Get,
+  Headers,
+  HttpCode,
+} from '@nestjs/common';
 import { AppService } from './app.service';
 import { ApiProperty } from '@nestjs/swagger';
 export class CreateUserDto {
@@ -28,36 +36,36 @@ export class CreateEventDto {
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Post('user')
-  async create(@Body() createUserDto: CreateUserDto): Promise<any> {
-    return this.appService.create(createUserDto);
-  }
-
-  @Get('user/details/:userId')
-  async getUser(@Param('userId') userId: string): Promise<any> {
-    return this.appService.getUserById(userId);
-  }
-
+  // api to create host schedule
   @Post('schedule')
+  @HttpCode(201)
   async createSchedule(@Body() createSchduleDto: any): Promise<any> {
     return this.appService.createSchedule(createSchduleDto);
   }
-
+  // api to fetch host schedules
   @Get('user/schedules/:userId')
+  @HttpCode(200)
   async getUserSchedules(@Param('userId') userId: string): Promise<any> {
     return this.appService.getUserSchedules(userId);
   }
 
+  // create event in calendar
   @Post('event')
+  @HttpCode(201)
   async createEvent(@Body() createEventDto: CreateEventDto): Promise<any> {
     return this.appService.createActalEvent(createEventDto);
   }
+
+  // returns url for google authorization
   @Get('authUrl')
+  @HttpCode(200)
   async getCreds(): Promise<any> {
     return this.appService.generateAuthUrl();
   }
 
+  // refresh access token
   @Post('/refresh-token')
+  @HttpCode(200)
   async refreshAccessToken(
     @Headers('authorization') authorizationHeader: string,
   ) {
@@ -70,5 +78,17 @@ export class AppController {
     } catch (error) {
       throw error;
     }
+  }
+
+  @Post('user')
+  @HttpCode(201)
+  async create(@Body() createUserDto: CreateUserDto): Promise<any> {
+    return this.appService.create(createUserDto);
+  }
+
+  @Get('user/details/:userId')
+  @HttpCode(200)
+  async getUser(@Param('userId') userId: string): Promise<any> {
+    return this.appService.getUserById(userId);
   }
 }
