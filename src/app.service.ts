@@ -8,14 +8,14 @@ import {
 } from '@nestjs/common';
 import axios from 'axios';
 import { CreateUserDto, UserDao } from '../dao/user.dao';
-import { ScheduleDao } from 'dao/schedule.dao';
-import { User } from 'schemas/userModel';
-import { Schedule } from 'schemas/ScheduleModel';
-import { EventsDao } from 'dao/events.dao';
+import { ScheduleDao } from '../dao/schedule.dao';
+import { User } from '../schemas/userModel';
+import { Schedule } from '../schemas/ScheduleModel';
+import { EventsDao } from '../dao/events.dao';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
-import { CreateEventDto, GetTokenDto, ScheduleDto } from 'dao/dto';
+import { GetTokenDto, ScheduleDto } from 'dto';
 
 @Injectable()
 export class AppService {

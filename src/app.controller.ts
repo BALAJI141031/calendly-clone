@@ -13,10 +13,10 @@ import {
   CreateUserDto,
   ScheduleDto,
   GetTokenDto,
-} from 'dao/dto';
-import { Schedule } from 'schemas/ScheduleModel';
-import { Event } from 'schemas/eventModel';
-import { User } from 'schemas/userModel';
+} from '../dto';
+import { Schedule } from '../schemas/ScheduleModel';
+import { Event } from '../schemas/eventModel';
+import { User } from '../schemas/userModel';
 import { ApiResponse } from '@nestjs/swagger';
 
 @Controller()

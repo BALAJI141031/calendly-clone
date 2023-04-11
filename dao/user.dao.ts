@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { User } from 'schemas/userModel';
+import { User } from '../schemas/userModel';
 import { Types } from 'mongoose';
 import { NotFoundException } from '@nestjs/common';
 export class CreateUserDto {
