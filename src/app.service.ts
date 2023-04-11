@@ -23,10 +23,6 @@ export class AppService {
       this.configService.get<string>('client_secret'),
       this.configService.get<string>('redirect_uri'),
     );
-    const calendar = google.calendar({
-      version: 'v3',
-      auth: this.oauth2Client,
-    });
   }
   @Inject()
   private userDao: UserDao;
@@ -86,15 +82,15 @@ export class AppService {
         calendarId: 'primary',
         requestBody: event,
       },
-      (err, res) => {
+      async (err, res) => {
         if (err) {
           console.error(`Error: ${err}`);
           return;
         }
         console.log(`Event created: ${res.data.htmlLink}`);
+        return await this.eventsDao.create(createEventDto);
       },
     );
-    return await this.eventsDao.create(createEventDto);
   }
 
   async generateAuthUrl() {
