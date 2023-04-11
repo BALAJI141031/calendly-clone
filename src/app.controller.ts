@@ -53,9 +53,17 @@ export class AppController {
     description: 'created event',
     type: Event,
   })
-  @HttpCode(201)
+  @ApiResponse({
+    status: 401,
+    description: 'un authorized',
+  })
   async createEvent(@Body() createEventDto: CreateEventDto): Promise<any> {
-    return this.appService.createActalEvent(createEventDto);
+    try {
+      return this.appService.createActalEvent(createEventDto);
+    } catch (e) {
+      console.log('erorroor');
+      throw e;
+    }
   }
 
   // returns url for google authorization

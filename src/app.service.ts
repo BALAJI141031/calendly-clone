@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import axios from 'axios';
 import { CreateUserDto, UserDao } from '../dao/user.dao';
@@ -14,7 +15,7 @@ import { EventsDao } from 'dao/events.dao';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
-import { GetTokenDto, ScheduleDto } from 'dao/dto';
+import { CreateEventDto, GetTokenDto, ScheduleDto } from 'dao/dto';
 
 @Injectable()
 export class AppService {
@@ -44,77 +45,74 @@ export class AppService {
     }
   }
   async createActalEvent(createEventDto: any) {
-    const { scheduleId, organiserId, endTime, startTime, guestEmail, day } =
-      createEventDto;
-
-    this.oauth2Client.setCredentials({
-      access_token: this.configService.get<string>('access_token'),
-    });
-    const calendar = google.calendar({
-      version: 'v3',
-      auth: this.oauth2Client,
-    });
-    let user;
     try {
-      user = await this.userDao.getUserById(organiserId);
-    } catch (e) {
-      throw new NotFoundException(`Organiser with ID ${organiserId} not found`);
-    }
-    const schedule = await this.scheduleDao.getSchedule({ _id: scheduleId });
-    if (!schedule) {
-      throw new NotFoundException(
-        `Organiser is not available during this slot`,
-      );
-    }
-    if (startTime < schedule.start || endTime > schedule.end) {
-      throw new BadRequestException(
-        'Your event is not falling in ordaniser schedule',
-      );
-    }
-    const query = {
-      organiserId,
-      day: { $eq: day },
-      startTime: { $gt: startTime },
-      endTime: { $lt: endTime },
-    };
-    const organiserEventsClash = await this.eventsDao.findEvent(query);
-    if (organiserEventsClash) {
-      throw new BadRequestException(
-        'Sorry this Slot is Booked by some other user',
-      );
-    }
-    delete query.organiserId;
-    query['guestEmail'] = guestEmail;
-    const isGuestSlotBooked = await this.eventsDao.findEvent(query);
-    if (isGuestSlotBooked) {
-      throw new BadRequestException('You have already meeting in this slot');
-    }
+      const { scheduleId, organiserId, endTime, startTime, guestEmail, day } =
+        createEventDto;
 
-    const event = {
-      summary: '',
-      description: '',
-      start: {
-        dateTime: startTime,
-        timeZone: 'America/Los_Angeles',
-      },
-      end: {
-        dateTime: endTime,
-        timeZone: 'America/Los_Angeles',
-      },
-      attendees: [{ email: user.email }, { email: guestEmail }],
-    };
+      this.oauth2Client.setCredentials({
+        access_token: this.configService.get<string>('access_token'),
+      });
+      const calendar = google.calendar({
+        version: 'v3',
+        auth: this.oauth2Client,
+      });
+      let user;
+      try {
+        user = await this.userDao.getUserById(organiserId);
+      } catch (e) {
+        throw new NotFoundException(
+          `Organiser with ID ${organiserId} not found`,
+        );
+      }
+      const schedule = await this.scheduleDao.getSchedule({ _id: scheduleId });
+      if (!schedule) {
+        throw new NotFoundException(
+          `Organiser is not available during this slot`,
+        );
+      }
+      if (startTime < schedule.start || endTime > schedule.end) {
+        throw new BadRequestException(
+          'Your event is not falling in organiser schedule',
+        );
+      }
+      const query = {
+        organiserId,
+        day: { $eq: day },
+        startTime: { $gt: startTime },
+        endTime: { $lt: endTime },
+      };
+      const organiserEventsClash = await this.eventsDao.findEvent(query);
+      if (organiserEventsClash) {
+        throw new BadRequestException(
+          'Sorry this Slot is Booked by some other user',
+        );
+      }
+      delete query.organiserId;
+      query['guestEmail'] = guestEmail;
+      const isGuestSlotBooked = await this.eventsDao.findEvent(query);
+      if (isGuestSlotBooked) {
+        throw new BadRequestException('You have already meeting in this slot');
+      }
 
-    // Insert the event into the primary calendar
-    calendar.events.insert(
-      {
-        calendarId: 'primary',
-        requestBody: event,
-      },
-      async (err, res) => {
-        if (err) {
-          console.error(`Error: ${err}`);
-          return;
-        }
+      const event = {
+        summary: '',
+        description: '',
+        start: {
+          dateTime: startTime,
+          timeZone: 'America/Los_Angeles',
+        },
+        end: {
+          dateTime: endTime,
+          timeZone: 'America/Los_Angeles',
+        },
+        attendees: [{ email: user.email }, { email: guestEmail }],
+      };
+
+      try {
+        const res = await calendar.events.insert({
+          calendarId: 'primary',
+          requestBody: event,
+        });
         console.log(`Event created: ${res.data.htmlLink}`);
         const eventResponse = await this.eventsDao.create(createEventDto);
         const updatedEvents = [...(user?.events || []), eventResponse._id];
@@ -122,8 +120,13 @@ export class AppService {
           scheduleId: updatedEvents,
         });
         return eventResponse;
-      },
-    );
+      } catch (err) {
+        console.error(`Error: ${err}`);
+        throw new UnauthorizedException();
+      }
+    } catch (e) {
+      throw e;
+    }
   }
 
   async generateAuthUrl() {
