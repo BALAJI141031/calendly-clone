@@ -130,3 +130,13 @@ export class ScheduleDto {
   })
   readonly events: Types.ObjectId[];
 }
+
+export class GetTokenDto {
+  @ApiProperty({
+    description: 'code given by google to get tokens',
+    example:
+      '4/0AVHEtk4vt46-zPm2yn0HBFR3d2uYTwCVwLpD1QCjRGxhXHOk6i3YIBU1EEVISuYgXcqJassdfdffaa',
+  })
+  @IsNotEmpty()
+  readonly code: string;
+}

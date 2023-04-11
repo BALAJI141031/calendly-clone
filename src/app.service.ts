@@ -14,7 +14,7 @@ import { EventsDao } from 'dao/events.dao';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
-import { ScheduleDto } from 'dao/dto';
+import { GetTokenDto, ScheduleDto } from 'dao/dto';
 
 @Injectable()
 export class AppService {
@@ -35,15 +35,18 @@ export class AppService {
   @Inject()
   private scheduleDao: ScheduleDao;
 
+  async getTokens(getTokenDto: GetTokenDto) {
+    try {
+      const { tokens } = await this.oauth2Client.getToken(getTokenDto.code);
+      return tokens;
+    } catch (e) {
+      console.log(e);
+    }
+  }
   async createActalEvent(createEventDto: any) {
     const { scheduleId, organiserId, endTime, startTime, guestEmail, day } =
       createEventDto;
-    // try {
-    //   const { tokens } = await oauth2Client.getToken(code);
-    //   console.log(tokens, '----------------------------->');
-    // } catch (e) {
-    //   console.log(e);
-    // }
+
     this.oauth2Client.setCredentials({
       access_token: this.configService.get<string>('access_token'),
     });

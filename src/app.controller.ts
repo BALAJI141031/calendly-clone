@@ -8,9 +8,16 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { AppService } from './app.service';
-import { CreateEventDto, CreateUserDto, ScheduleDto } from 'dao/dto';
+import {
+  CreateEventDto,
+  CreateUserDto,
+  ScheduleDto,
+  GetTokenDto,
+} from 'dao/dto';
 import { Schedule } from 'schemas/ScheduleModel';
+import { Event } from 'schemas/eventModel';
 import { User } from 'schemas/userModel';
+import { ApiResponse } from '@nestjs/swagger';
 
 @Controller()
 export class AppController {
@@ -18,7 +25,11 @@ export class AppController {
 
   // api to create host schedule
   @Post('schedule')
-  @HttpCode(201)
+  @ApiResponse({
+    status: 201,
+    description: 'created schedule',
+    type: Schedule,
+  })
   async createSchedule(
     @Body() createSchduleDto: ScheduleDto,
   ): Promise<ScheduleDto> {
@@ -26,13 +37,22 @@ export class AppController {
   }
   // api to fetch host schedules
   @Get('user/schedules/:userId')
-  @HttpCode(200)
+  @ApiResponse({
+    status: 200,
+    description: 'created schedules',
+    type: [Schedule],
+  })
   async getUserSchedules(@Param('userId') userId: string): Promise<Schedule[]> {
     return this.appService.getUserSchedules(userId);
   }
 
   // create event in calendar
   @Post('event')
+  @ApiResponse({
+    status: 201,
+    description: 'created event',
+    type: Event,
+  })
   @HttpCode(201)
   async createEvent(@Body() createEventDto: CreateEventDto): Promise<any> {
     return this.appService.createActalEvent(createEventDto);
@@ -40,9 +60,19 @@ export class AppController {
 
   // returns url for google authorization
   @Get('authUrl')
-  @HttpCode(200)
-  async getCreds(): Promise<any> {
+  @ApiResponse({
+    status: 201,
+    description: 'url to authorize',
+    type: String,
+  })
+  async generateAuthUrl(): Promise<string> {
     return this.appService.generateAuthUrl();
+  }
+
+  @Get('tokens')
+  @HttpCode(200)
+  async getTokens(@Body() getTokenDto: GetTokenDto): Promise<any> {
+    return this.appService.getTokens(getTokenDto);
   }
 
   // refresh access token
@@ -63,13 +93,21 @@ export class AppController {
   }
 
   @Post('user')
-  @HttpCode(201)
+  @ApiResponse({
+    status: 201,
+    description: 'created user',
+    type: User,
+  })
   async create(@Body() createUserDto: CreateUserDto): Promise<User> {
     return this.appService.create(createUserDto);
   }
 
   @Get('user/details/:userId')
-  @HttpCode(200)
+  @ApiResponse({
+    status: 201,
+    description: 'user response',
+    type: User,
+  })
   async getUser(@Param('userId') userId: string): Promise<User> {
     return this.appService.getUserById(userId);
   }
