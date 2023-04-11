@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, Headers } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ApiProperty } from '@nestjs/swagger';
 export class CreateUserDto {
@@ -50,12 +50,25 @@ export class AppController {
 
   @Post('event')
   async createEvent(@Body() createEventDto: CreateEventDto): Promise<any> {
-    console.log('event called');
-    return this.appService.createEvent(createEventDto);
+    return this.appService.createActalEvent(createEventDto);
   }
-  @Post('eventCreds')
+  @Get('authUrl')
   async getCreds(): Promise<any> {
-    console.log('event called');
-    // return this.appService.createEvent(createEventDto);
+    return this.appService.generateAuthUrl();
+  }
+
+  @Post('/refresh-token')
+  async refreshAccessToken(
+    @Headers('authorization') authorizationHeader: string,
+  ) {
+    try {
+      const expiredAccessToken = authorizationHeader.split(' ')[1];
+      const newAccessToken = await this.appService.refreshAccessToken(
+        expiredAccessToken,
+      );
+      return newAccessToken;
+    } catch (error) {
+      throw error;
+    }
   }
 }

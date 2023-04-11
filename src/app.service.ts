@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import axios from 'axios';
 import { CreateUserDto, UserDao } from '../dao/user.dao';
 import { ScheduleDao } from 'dao/schedule.dao';
 import { User } from 'schemas/userModel';
@@ -11,15 +12,22 @@ import { Schedule } from 'schemas/ScheduleModel';
 import { EventsDao } from 'dao/events.dao';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-const client_id =
-  '1096141029453-pqpr399re6fcr4c3f79ffebkmh4i8jb3.apps.googleusercontent.com';
-const client_secret = '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';
-const redirect_uri = 'http://0.0.0.0:3000/eventCreds';
-const oauth2Client = new OAuth2Client(client_id, client_secret, redirect_uri);
-const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AppService {
+  private oauth2Client;
+  constructor(private configService: ConfigService) {
+    this.oauth2Client = new OAuth2Client(
+      this.configService.get<string>('client_id'),
+      this.configService.get<string>('client_secret'),
+      this.configService.get<string>('redirect_uri'),
+    );
+    const calendar = google.calendar({
+      version: 'v3',
+      auth: this.oauth2Client,
+    });
+  }
   @Inject()
   private userDao: UserDao;
 
@@ -29,40 +37,47 @@ export class AppService {
   @Inject()
   private scheduleDao: ScheduleDao;
 
-  async createEvent(createEventDto) {
-    const authUrl = oauth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: ['https://www.googleapis.com/auth/calendar'],
+  async createActalEvent(createEventDto) {
+    const {
+      scheduleId,
+      organiserId,
+      summary,
+      description,
+      endTime,
+      startTime,
+      guestEmail,
+    } = createEventDto;
+    // try {
+    //   const { tokens } = await oauth2Client.getToken(code);
+    //   console.log(tokens, '----------------------------->');
+    // } catch (e) {
+    //   console.log(e);
+    // }
+    this.oauth2Client.setCredentials({
+      access_token: this.configService.get<string>('access_token'),
     });
-    return authUrl;
-    const code = 'authorization_code';
-    const { tokens } = await oauth2Client.getToken(code);
-    console.log(tokens, 'generated------------->');
-    oauth2Client.setCredentials(tokens);
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-    const { scheduleId, organiserId } = createEventDto;
-    await this.userDao.getUserById(organiserId);
+    const calendar = google.calendar({
+      version: 'v3',
+      auth: this.oauth2Client,
+    });
+    const user = await this.userDao.getUserById(organiserId);
     const schedule = await this.scheduleDao.getSchedule({ _id: scheduleId });
     if (!schedule) {
       throw new NotFoundException(`schedule with ID ${scheduleId} not found`);
     }
 
     const event = {
-      summary: 'Appointment',
-      location: 'Somewhere',
-      description: 'Appointment Description',
+      summary,
+      description,
       start: {
-        dateTime: '2023-04-10T09:00:00-07:00',
+        dateTime: startTime,
         timeZone: 'America/Los_Angeles',
       },
       end: {
-        dateTime: '2023-04-10T10:00:00-07:00',
+        dateTime: endTime,
         timeZone: 'America/Los_Angeles',
       },
-      attendees: [
-        { email: 'balajiab09@gmail.com' },
-        { email: 'gopalbharadva@gmail.com' },
-      ],
+      attendees: [{ email: user.email }, { email: guestEmail }],
     };
 
     // Insert the event into the primary calendar
@@ -79,8 +94,15 @@ export class AppService {
         console.log(`Event created: ${res.data.htmlLink}`);
       },
     );
+    return await this.eventsDao.create(createEventDto);
+  }
 
-    // return await this.eventsDao.create(createEventDto);
+  async generateAuthUrl() {
+    const authUrl = this.oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      scope: ['https://www.googleapis.com/auth/calendar'],
+    });
+    return authUrl;
   }
 
   async create(createUserDto: CreateUserDto): Promise<any> {
@@ -111,5 +133,28 @@ export class AppService {
 
   async getUserSchedules(userId: string): Promise<Schedule[]> {
     return await this.scheduleDao.getSchedules(userId);
+  }
+
+  async refreshAccessToken(refreshToken) {
+    try {
+      const response = await axios({
+        method: 'post',
+        url: 'https://oauth2.googleapis.com/token',
+        data: {
+          grant_type: 'refresh_token',
+          client_id: this.configService.get<string>('client_id'),
+          client_secret: this.configService.get<string>('client_secret'),
+          refresh_token: refreshToken,
+        },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
+      return response.data.access_token;
+    } catch (error) {
+      console.error(error);
+      throw new Error('Error refreshing access token');
+    }
   }
 }
